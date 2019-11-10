@@ -154,10 +154,17 @@ while error > cifras_sig:
 
             if rank == 0:
                 #se ensambla y se actualizan todos
-                actualizaion 
-                
+                actualizaion = comm.recv(source=1)
+                print(actualizaion)
+                print("aqui")
+                print([nueva_fila,error_list_diff])
+
             else:
-                actualizacion = comm.recv(source=0)
+                parte = []
+                parte.append(nueva_fila)
+                parte.append(error_list_diff)
+                comm.send(parte, dest=0)
+                #actualizacion = comm.recv(source=0)
                 #se recive y se actualiza todo
 
 
