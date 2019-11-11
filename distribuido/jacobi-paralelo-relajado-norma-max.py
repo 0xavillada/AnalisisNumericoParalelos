@@ -126,12 +126,27 @@ def jacobi(inicio,fin):
 
 
 if rank == 0:
-    comm.send(n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos,dest=1)
+    envio = []
+    envio.append(n_incognitas)
+    envio.append(variables)
+    envio.append(valores_iniciales)
+    envio.append(cifras_sig)
+    envio.append(maximo_iter)
+    envio.append(lambda_value)
+    envio.append(n_hilos)
+    comm.send(envio,dest=1)
     print ("rank 0",n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos)
     exit(0)
 if rank == 1:
     #test = comm.recv(source=0)
-    n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos = comm.recv(source=0)
+    recivido = comm.recv(source=0)
+    n_incognitas = recivido[0]
+    variables = recivido[1]
+    valores_iniciales = recivido[2]
+    cifras_sig = recivido[3]
+    maximo_iter = recivido[4]
+    lambda_value = recivido[5]
+    n_hilos = recivido[6]
     print ("rank 1",n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos)
     exit(0)
 
