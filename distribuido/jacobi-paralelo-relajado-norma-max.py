@@ -181,7 +181,7 @@ while error > cifras_sig:
 
         #print("recive del 1 - 2")
         error_list_diff = error_list_diff + errorRank1
-        nueva_fila = nueva_fila[:1] + nuevafRank1[1:]
+        nueva_fila = nueva_fila[:n_incognitas_medio] + nuevafRank1[n_incognitas_medio:]
         print("queda asi nueva fila:",nueva_fila)
         print("queda asi el error:",error_list_diff)
         #print("rank 0 calculo: error list:",error_list_diff," nueva fila:",nueva_fila)
