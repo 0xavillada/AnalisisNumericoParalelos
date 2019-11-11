@@ -126,12 +126,13 @@ def jacobi(inicio,fin):
 
 
 if rank == 0:
-    comm.send("melo del 2",dest=1)
-    print("melo 1")
+    comm.send(n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos,dest=1)
+    print ("rank 0",n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos)
     exit(0)
 if rank == 1:
-    test = comm.recv(source=0)
-    print("melo 2")
+    #test = comm.recv(source=0)
+    n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos = comm.recv(source=0)
+    print ("rank 1",n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos)
     exit(0)
 
 cifras_sig = 0.5*(10**(-cifras_sig))
