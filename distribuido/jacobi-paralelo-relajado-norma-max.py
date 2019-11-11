@@ -100,9 +100,15 @@ def jacobi(inicio,fin):
     global error_list_diff
     global nueva_fila
     global control_num_hilos
+    global ecuaciones
+    global n_incognitas
 
-    for x in range(inicio,fin):
-        nueva_fila.append(valores_iniciales[x])
+    for x in range(0,n_incognitas):
+        if x >= inicio:
+            #print("x: ",x)
+            nueva_fila.append(valores_iniciales[x])
+        else:
+            nueva_fila.append(0)
 
     for variables_index in range(inicio,fin):
         temp = 0
@@ -116,12 +122,12 @@ def jacobi(inicio,fin):
 
         # RELAJACION
         nueva_fila[variables_index] = lambda_value * nueva_fila[variables_index] + (1 - lambda_value )* valores_iniciales[variables_index]
-
+        print("\nnueva fila: ",nueva_fila)
     # ERROR RELATIVO NORMA MAXIMO---------------------------------------
     for i in range(inicio,fin):
         error_list_diff.append(abs(nueva_fila[i]-valores_iniciales[i]))
     # ------------------------------------------------------------------
-    print(valores_iniciales,error,error_list_diff,nueva_fila)
+    #print(valores_iniciales,error,error_list_diff,nueva_fila)
     control_num_hilos-=1
 
 
@@ -134,11 +140,15 @@ if rank == 0:
     envio.append(maximo_iter)
     envio.append(lambda_value)
     envio.append(n_hilos)
+    envio.append(ecuaciones)
+    #print("envio del 0 - 1")
     comm.send(envio,dest=1)
+
 
 if rank == 1:
     #test = comm.recv(source=0)
     recivido = comm.recv(source=0)
+    #print("recivido del 0 - 1")
     n_incognitas = recivido[0]
     variables = recivido[1]
     valores_iniciales = recivido[2]
@@ -146,6 +156,7 @@ if rank == 1:
     maximo_iter = recivido[4]
     lambda_value = recivido[5]
     n_hilos = recivido[6]
+    ecuaciones = recivido[7]
 
 n_incognitas_medio = int(n_incognitas / 2)
 
@@ -161,22 +172,42 @@ while error > cifras_sig:
         threading_segments(0,n_incognitas_medio)
         while control_num_hilos > 0:
             pass
-        errorRank1,nuevafRank1 = comm.recv(source=1)
-        error_list_diff = error_list_diff + errorRank1
-        nueva_fila = nueva_fila + nuevafRank1
+        msg = comm.recv(source=1)
+        errorRank1 = msg[0]
+        nuevafRank1 = msg[1]
+        
+        print("error rank1:",errorRank1)
+        print("nuevafRank rank1:",nuevafRank1)
 
+        #print("recive del 1 - 2")
+        error_list_diff = error_list_diff + errorRank1
+        nueva_fila = nueva_fila[:1] + nuevafRank1[1:]
+        print("queda asi nueva fila:",nueva_fila)
+        print("queda asi el error:",error_list_diff)
+        #print("rank 0 calculo: error list:",error_list_diff," nueva fila:",nueva_fila)
         error = max(error_list_diff) / max(map(abs,nueva_fila))
         for x in range(n_incognitas):
             valores_iniciales[x] = nueva_fila[x]
-        comm.send(error,valores_iniciales,dest=1)
+        comm.send((error,valores_iniciales), dest=1)
 
     if rank == 1:
         threading_segments(n_incognitas_medio,n_incognitas)
         while control_num_hilos > 0:
             pass
-        comm.send(error_list_diff,nueva_fila, dest=0)
-        error,valores_iniciales = comm.recv(source=0)
+        comm.send((error_list_diff,nueva_fila), dest=0)
+        msg = comm.recv(source=0)
+        error = msg[0]
+        valores_iniciales = msg[1]
+    
+    if rank == 0:
+        print("rank:",rank)
+        print("\n\n> Iteracion numero:",iteraciones)
+        print("> Valores de Xn: ")
+        for x in range(n_incognitas):
+            print("X"+str(x+1)+" =",valores_iniciales[x])
 
+        print("> Toleracia: +-",error)    
+    
     nueva_fila.clear()
     error_list_diff.clear()
     iteraciones += 1
