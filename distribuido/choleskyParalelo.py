@@ -30,8 +30,10 @@ def cholesky():
 
         if rank == 0:
             lik(k,n)
-        else:
+        elif rank == 1:
             ukj(k,n)
+        else:
+            exit(0)
 
     #endfor
 
