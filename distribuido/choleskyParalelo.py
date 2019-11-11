@@ -16,6 +16,8 @@ U = scipy.array(np.zeros_like(A))
 
 #En cholesky los elementos de U[k][k] y L[k][k] son iguales
 def cholesky():
+    global L
+    global U
     for k in range (0,n):
         sum1 = 0.0
         for p in range(0, k):
@@ -43,27 +45,33 @@ def cholesky():
         comm.send(U,dest=0)
         exit(0)
 
-    print("Desde aquí se hace solo desde el rank:",rank)
-    print(L, U)
     return L, U
 
 def lik(k, n):
+    global L
+    global U
     for i in range(k+1, n):
         sum2 = 0.0
         for p in range(0, k):
             sum2 += L[i][p]*U[p][k]
         #endfor
         L[i][k] = (A[i][k] - sum2)/U[k][k]
+        #Descomentar la siguiente linea para el paso a paso
+        #print("\nL:\n",L)
     #endfor
     return L
 
 def ukj(k, n):
+    global L
+    global U
     for j in range(k+1, n):
         sum3 = 0.0
         for p in range(0, k):
             sum3 += L[k][p]*U[p][j]
         #endfor
         U[k][j] = (A[k][j] - sum3)/L[k][k]
+        #Descomentar la siguiente linea para el paso a paso
+        #print("\nU:\n",U)
     #endfor
     return U
     
