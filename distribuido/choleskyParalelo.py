@@ -1,14 +1,17 @@
 from math import sqrt
 import scipy
 import numpy as np
-import threading
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.size
 
 A = scipy.array([[45.0, -7.0, 8.0, -3.0], [-5.0, 75.0, 4.0, 1.0], [-3.0, -2.0, 88.0, 9.0 ], [-6.0, -3.0, -4.0, 98.0]])
 n = len(A) 
 
 L = scipy.array(np.zeros_like(A))
 U = scipy.array(np.zeros_like(A))
-
 
 
 #En cholesky los elementos de U[k][k] y L[k][k] son iguales
@@ -23,25 +26,25 @@ def cholesky():
         L[k][k] = float(sqrt(A[k][k] - sum1))
         U[k][k] = float(L[k][k])
 
-        #paralelizar:
-        t1 = threading.Thread(name="Hilo_L", target=lik, args=(k,n))
-        
-        #Paralelizar:   
-        t2 = threading.Thread(name="Hilo_U", target=ukj, args=(k,n))
+        if rank == 0:
+            lik(k,n)
+        else:
+            ukj(k,n)
 
-        t1.start()
-        t2.start()
-
-        t1.join()
-        t2.join()
     #endfor
    
-    print("L: ")
-    print(L)
-    print("")
-    print("U: ")
-    print(U)
-    print("")
+    if rank == 0:
+        print("\nL: ")
+        print(L)
+        U = comm.recv(source=1)
+    else:
+        print("\nU: ")
+        print(U)
+        comm.send(U,dest=0)
+        exit(0)
+
+    print("Desde aquí se hace solo desde el rank:",rank)
+    print(L, U)
     return L, U
 
 def lik(k, n):

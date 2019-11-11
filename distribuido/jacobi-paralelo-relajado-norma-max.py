@@ -1,6 +1,5 @@
 import math
 import threading
-from mpi4py import MPI
 
 ecuaciones = []
 variables = []
@@ -115,29 +114,9 @@ def jacobi(inicio,fin):
     for i in range(inicio,fin):
         error_list_diff.append(abs(nueva_fila[i]-valores_iniciales[i]))
     # ------------------------------------------------------------------
+    print(valores_iniciales,error,error_list_diff,nueva_fila)
     control_num_hilos-=1
 
-
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.size
-name = MPI.Get_processor_name()
-
-mpi_particion = int (n_incognitas / size)
-if mpi_particion < 1:
-    mpi_particion = 1
-indices = []
-indiceInicial = 0
-indiceFinal = mpi_particion
-
-for x in range(size):
-    indices.append((indiceInicial,indiceFinal))
-    indiceInicial = indiceFinal
-
-    if x == size - 1:
-        indiceFinal = indiceInicial + n_incognitas
-    else:
-        indiceFinal = indiceInicial + mpi_particion
 
 cifras_sig = 0.5*(10**(-cifras_sig))
 iteraciones = 0
@@ -145,29 +124,12 @@ while error > cifras_sig:
     if iteraciones > maximo_iter:
         print("> ERROR: Se llegó al maximo de iteraciones!")
         exit(1)
+    
+    hilo = 0
+    threading_segments(0,n_incognitas)
 
-    for procesador in range(size):
-        if rank == procesador:
-            threading_segments(indices[rank][0],indices[rank][1])
-            while control_num_hilos > 0:
-                pass
-
-            if rank == 0:
-                #se ensambla y se actualizan todos
-                actualizaion = comm.recv(source=1)
-                print(actualizaion)
-                print("aqui")
-                print([nueva_fila,error_list_diff])
-
-            else:
-                parte = []
-                parte.append(nueva_fila)
-                parte.append(error_list_diff)
-                comm.send(parte, dest=0)
-                #actualizacion = comm.recv(source=0)
-                #se recive y se actualiza todo
-
-
+    while control_num_hilos > 0:
+        pass
     error = max(error_list_diff) / max(map(abs,nueva_fila))
     for x in range(n_incognitas):
         valores_iniciales[x] = nueva_fila[x]
