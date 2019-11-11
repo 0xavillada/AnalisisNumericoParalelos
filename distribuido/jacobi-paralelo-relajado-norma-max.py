@@ -135,8 +135,7 @@ if rank == 0:
     envio.append(lambda_value)
     envio.append(n_hilos)
     comm.send(envio,dest=1)
-    print ("rank 0",n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos)
-    exit(0)
+
 if rank == 1:
     #test = comm.recv(source=0)
     recivido = comm.recv(source=0)
@@ -147,8 +146,8 @@ if rank == 1:
     maximo_iter = recivido[4]
     lambda_value = recivido[5]
     n_hilos = recivido[6]
-    print ("rank 1",n_incognitas,variables,valores_iniciales,cifras_sig,maximo_iter,lambda_value,n_hilos)
-    exit(0)
+
+n_incognitas_medio = int(n_incognitas / 2)
 
 cifras_sig = 0.5*(10**(-cifras_sig))
 iteraciones = 0
@@ -158,22 +157,36 @@ while error > cifras_sig:
         exit(1)
     
     hilo = 0
-    threading_segments(0,n_incognitas)
+    if rank == 0:
+        threading_segments(0,n_incognitas_medio)
+        while control_num_hilos > 0:
+            pass
+        errorRank1,nuevafRank1 = comm.recv(source=1)
+        error_list_diff = error_list_diff + errorRank1
+        nueva_fila = nueva_fila + nuevafRank1
 
-    while control_num_hilos > 0:
-        pass
-    error = max(error_list_diff) / max(map(abs,nueva_fila))
-    for x in range(n_incognitas):
-        valores_iniciales[x] = nueva_fila[x]
+        error = max(error_list_diff) / max(map(abs,nueva_fila))
+        for x in range(n_incognitas):
+            valores_iniciales[x] = nueva_fila[x]
+        comm.send(error,valores_iniciales,dest=1)
+
+    if rank == 1:
+        threading_segments(n_incognitas_medio,n_incognitas)
+        while control_num_hilos > 0:
+            pass
+        comm.send(error_list_diff,nueva_fila, dest=0)
+        error,valores_iniciales = comm.recv(source=0)
+
     nueva_fila.clear()
     error_list_diff.clear()
     iteraciones += 1
 
-# SALIDA ---------------------------------------------------------------------------------------
-print("\n\n> Iteracion numero:",iteraciones)
-print("> Valores de Xn: ")
-for x in range(n_incognitas):
-    print("X"+str(x+1)+" =",valores_iniciales[x])
+if rank == 0:
+    # SALIDA ---------------------------------------------------------------------------------------
+    print("\n\n> Iteracion numero:",iteraciones)
+    print("> Valores de Xn: ")
+    for x in range(n_incognitas):
+        print("X"+str(x+1)+" =",valores_iniciales[x])
 
-print("> Toleracia: +-",error)
-# ----------------------------------------------------------------------------------------------
+    print("> Toleracia: +-",error)
+    # ----------------------------------------------------------------------------------------------
