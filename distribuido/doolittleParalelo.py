@@ -1,6 +1,12 @@
 import scipy
 import numpy as np 
 import threading
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.size
+
 #A = scipy.array([[45.0, -7.0, 8.0, -3.0], [-5.0, 75.0, 4.0, 1.0], [-3.0, -2.0, 88.0, 9.0 ], [-6.0, -3.0, -4.0, 98.0]])
 A = scipy.array([[36.0, 3.0, -4.0, 5.0], [5.0, -45.0, 10.0, -2.0], [6.0, 8.0, 57.0, 5.0 ], [2.0, 3.0, -8.0, -42.0]])
 n = len(A) 
@@ -10,6 +16,8 @@ U = scipy.array(np.zeros_like(A))
 
 #En crout los elementos de U[k][k] son iguales a 1
 def doolittle():
+    global L
+    global U
     for k in range (0,n):
         sum1 = 0.0
         for p in range(0, k):
@@ -19,46 +27,52 @@ def doolittle():
         L[k][k] = 1.0
         U[k][k] = A[k][k] - sum1 #depende del metodo
         
-        #paralelizar:
-        t1 = threading.Thread(name="Hilo_L", target=lik, args=(k,n))
-        
-        #Paralelizar:   
-        t2 = threading.Thread(name="Hilo_U", target=ukj, args=(k,n))
-
-        t1.start()
-        t2.start()
-
-        t1.join()
-        t2.join()
+        if rank == 0:
+            lik(k,n)
+        else:
+            ukj(k,n)
 
     #endfor
-    print("L: ")
-    print(L)
-    print("")
-    print("U: ")
-    print(U)
+
+    if rank == 0:
+        print("\nL: ")
+        print(L)
+        U = comm.recv(source=1)
+    else:
+        print("\nU: ")
+        print(U)
+        comm.send(U,dest=0)
+        exit(0)
+
     return L, U
 
-
 def lik(k,n):
+    global L
+    global U
     for i in range(k+1, n):
         sum2 = 0.0
         for p in range(0,k):
             sum2 += L[i][p]*U[p][k]
         #endfor
         L[i][k] = (A[i][k]-sum2)/U[k][k]
+        #Descomentar la siguiente linea para el paso a paso
+        #print("\nL:\n",L)
     #endfor
-    return L
+    #return L
 
 def ukj(k,n):
+    global L
+    global U
     for j in range(k+1, n):
         sum3 = 0
         for p in range(0, k):
             sum3 += L[k][p]*U[p][j]
         #endfor
         U[k][j]= (A[k][j]-sum3)/L[k][k]
+        #Descomentar la siguiente linea para el paso a paso
+        #print("\nL:\n",L)
     #endfor
-    return U
+    #return U
 
 doolittle()
 

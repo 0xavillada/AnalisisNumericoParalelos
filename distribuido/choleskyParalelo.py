@@ -34,7 +34,7 @@ def cholesky():
             ukj(k,n)
 
     #endfor
-   
+
     if rank == 0:
         print("\nL: ")
         print(L)
@@ -59,7 +59,7 @@ def lik(k, n):
         #Descomentar la siguiente linea para el paso a paso
         #print("\nL:\n",L)
     #endfor
-    return L
+    #return L
 
 def ukj(k, n):
     global L
@@ -73,7 +73,7 @@ def ukj(k, n):
         #Descomentar la siguiente linea para el paso a paso
         #print("\nU:\n",U)
     #endfor
-    return U
+    #return U
     
 
 cholesky()
