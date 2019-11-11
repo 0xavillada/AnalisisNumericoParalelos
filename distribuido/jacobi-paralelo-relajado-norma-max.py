@@ -1,5 +1,11 @@
 import math
 import threading
+from mpi4py import MPI
+
+#Distribuido
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.size
 
 ecuaciones = []
 variables = []
@@ -19,53 +25,54 @@ n_hilos = 2
 n_hilos_segment = n_incognitas
 control_num_hilos = 0
 
-# ENTRADA DE DATOS -----------------------------------------------------------------------------
-try:
-    n_incognitas = int(input("Numero de incognitas:"))
-    n_hilos_segment = int(n_incognitas / n_hilos)
-    if n_hilos_segment == 0:
-        n_hilos_segment = 1
-except:
-    print("> ERROR: Entrada invalida")
-    exit(1)
-
-for ecuacion_index in range(n_incognitas):
-    for variable in range(n_incognitas+1):
-        try:
-            if variable == n_incognitas:
-
-                variables.append(float(input("\nVaraiable A de la ecuacion numero"+str(ecuacion_index+1)+":")))
-                break
-
-            variables.append(float(input("\nVaraiable X"+str(variable+1)+" de la ecuacion numero"+str(ecuacion_index+1)+":")))
-        except:
-            print("> ERROR: Entrada invalida")
-            exit(1)
-    ecuaciones.append(variables)
-    variables = []
-
-for iniciales in range(n_incognitas):
+if rank == 0:
+    # ENTRADA DE DATOS -----------------------------------------------------------------------------
     try:
-
-        valores_iniciales.append(float(input("\nValor inicial para X"+str(iniciales+1)+":")))
+        n_incognitas = int(input("Numero de incognitas:"))
+        n_hilos_segment = int(n_incognitas / n_hilos)
+        if n_hilos_segment == 0:
+            n_hilos_segment = 1
     except:
         print("> ERROR: Entrada invalida")
         exit(1)
 
-try:
+    for ecuacion_index in range(n_incognitas):
+        for variable in range(n_incognitas+1):
+            try:
+                if variable == n_incognitas:
 
-    cifras_sig = int(input("\nCifras significativas:"))
+                    variables.append(float(input("\nVaraiable A de la ecuacion numero"+str(ecuacion_index+1)+":")))
+                    break
 
-    maximo_iter = int(input("\nMaximo iteraciones:"))
+                variables.append(float(input("\nVaraiable X"+str(variable+1)+" de la ecuacion numero"+str(ecuacion_index+1)+":")))
+            except:
+                print("> ERROR: Entrada invalida")
+                exit(1)
+        ecuaciones.append(variables)
+        variables = []
 
-    lambda_value = float(input("\nLambda de relajacion:"))
+    for iniciales in range(n_incognitas):
+        try:
 
-    n_hilos = int(input("\nNumero de hilos de ejecucion:"))
+            valores_iniciales.append(float(input("\nValor inicial para X"+str(iniciales+1)+":")))
+        except:
+            print("> ERROR: Entrada invalida")
+            exit(1)
 
-except:
-    print("> ERROR: Entrada invalida")
-    exit(1)
-# ----------------------------------------------------------------------------------------------
+    try:
+
+        cifras_sig = int(input("\nCifras significativas:"))
+
+        maximo_iter = int(input("\nMaximo iteraciones:"))
+
+        lambda_value = float(input("\nLambda de relajacion:"))
+
+        n_hilos = int(input("\nNumero de hilos de ejecucion:"))
+
+    except:
+        print("> ERROR: Entrada invalida")
+        exit(1)
+    # ----------------------------------------------------------------------------------------------
 
 def threading_segments(inicio, fin):
 
@@ -117,6 +124,15 @@ def jacobi(inicio,fin):
     print(valores_iniciales,error,error_list_diff,nueva_fila)
     control_num_hilos-=1
 
+
+if rank == 0:
+    comm.send("melo del 2",dest=1)
+    print("melo 1")
+    exit(0)
+if rank == 1:
+    test = comm.recv(source=0)
+    print("melo 2")
+    exit(0)
 
 cifras_sig = 0.5*(10**(-cifras_sig))
 iteraciones = 0
